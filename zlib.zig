@@ -1,4 +1,7 @@
 const std = @import("std");
+const Step = std.Build.Step;
+const Build = std.Build;
+const Compile = Step.Compile;
 const Self = @This();
 
 fn root() []const u8 {
@@ -6,53 +9,41 @@ fn root() []const u8 {
 }
 
 const root_path = root() ++ "/";
-const package_path = root_path ++ "src/main.zig";
-pub const include_dir = root_path ++ "zlib";
-pub const Options = struct {
-    import_name: ?[]const u8 = null,
-};
+const package_path = "src/main.zig";
+pub const include_dir = "zlib";
 
 pub const Library = struct {
-    step: *std.build.LibExeObjStep,
+    compile: *Compile,
 
-    pub fn link(self: Library, other: *std.build.LibExeObjStep, opts: Options) void {
-        other.addIncludePath(.{ .path = include_dir });
-        other.linkLibrary(self.step);
-
-        if (opts.import_name) |import_name|
-            other.addAnonymousModule(
-                import_name,
-                .{ .source_file = .{ .path = package_path } },
-            );
+    pub fn link(self: Library, b: *Build, other: *Compile) void {
+        other.addIncludePath(b.path("zlib"));
+        other.linkLibrary(self.compile);
     }
 };
 
-pub fn create(b: *std.build.Builder, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode) Library {
-    const ret = b.addStaticLibrary(.{
-        .name = "z",
-        .target = target,
-        .optimize = optimize,
-    });
-    ret.linkLibC();
-    ret.addCSourceFiles(.{ .files = srcs, .flags = &.{"-std=c89"} });
+pub fn create(b: *Build, target: Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) Library {
+    const lib = b.addStaticLibrary(.{ .name = "z", .target = target, .optimize = optimize });
 
-    return Library{ .step = ret };
+    lib.linkLibC();
+    lib.addCSourceFiles(.{ .root = b.path(include_dir), .files = srcs, .flags = &.{"-std=c89"} });
+    lib.installHeadersDirectory(b.path(include_dir), "", .{});
+    return Library{ .compile = lib };
 }
 
 const srcs = &.{
-    root_path ++ "zlib/adler32.c",
-    root_path ++ "zlib/compress.c",
-    root_path ++ "zlib/crc32.c",
-    root_path ++ "zlib/deflate.c",
-    root_path ++ "zlib/gzclose.c",
-    root_path ++ "zlib/gzlib.c",
-    root_path ++ "zlib/gzread.c",
-    root_path ++ "zlib/gzwrite.c",
-    root_path ++ "zlib/inflate.c",
-    root_path ++ "zlib/infback.c",
-    root_path ++ "zlib/inftrees.c",
-    root_path ++ "zlib/inffast.c",
-    root_path ++ "zlib/trees.c",
-    root_path ++ "zlib/uncompr.c",
-    root_path ++ "zlib/zutil.c",
+    "adler32.c",
+    "compress.c",
+    "crc32.c",
+    "deflate.c",
+    "gzclose.c",
+    "gzlib.c",
+    "gzread.c",
+    "gzwrite.c",
+    "inflate.c",
+    "infback.c",
+    "inftrees.c",
+    "inffast.c",
+    "trees.c",
+    "uncompr.c",
+    "zutil.c",
 };
