@@ -465,8 +465,7 @@ test "compress gzip with zig interface" {
     try cmp.flush();
 
     // decompress with zig std lib gzip
-    var dcmp = try std.compress.gzip.decompress(allocator, fifo.reader());
-    defer dcmp.deinit();
+    var dcmp = std.compress.gzip.decompressor(fifo.reader());
     const actual = try dcmp.reader().readAllAlloc(allocator, std.math.maxInt(usize));
     defer allocator.free(actual);
 
