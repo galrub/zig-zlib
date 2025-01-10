@@ -12,12 +12,17 @@ pub const ZigLibrary = struct {
 
     pub fn link(self: ZigLibrary, b: *Build, other: *Compile) void {
         other.addIncludePath(b.path("src"));
-        other.linkLibrary(self.compile);
+        other.root_module.addImport("zlib", &self.compile.root_module);
     }
 };
 
 pub fn create(b: *Build, target: Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) ZigLibrary {
-    const lib = b.addStaticLibrary(.{ .name = "zlib", .target = target, .optimize = optimize, .root_source_file = b.path("src/main.zig") });
+    const lib = b.addStaticLibrary(.{
+        .name = "zlib",
+        .target = target,
+        .optimize = optimize,
+        .root_source_file = b.path("src/main.zig"),
+    });
 
     return ZigLibrary{ .compile = lib };
 }
